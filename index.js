@@ -8,7 +8,6 @@ const keys = require('./config/keys');
 const routes = require('./routes');
 const setupDB = require('./utils/db');
 
-const { port } = keys;
 const app = express();
 
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -26,10 +25,13 @@ const startServer = async () => {
   await require('./config/passport')(app);
   app.use(routes);
 
-  app.listen(port, '127.0.0.1', () => {
+  // ✅ FIXED PORT
+  const PORT = process.env.PORT || 5000;
+
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(
       `${chalk.green('✓')} ${chalk.blue(
-        `Listening on port ${port}. Visit http://127.0.0.1:${port}/ in your browser.`
+        `Server running on port ${PORT}`
       )}`
     );
   });
