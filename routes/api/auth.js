@@ -32,7 +32,8 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'You must enter a password.' });
     }
 
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res
         .status(400)

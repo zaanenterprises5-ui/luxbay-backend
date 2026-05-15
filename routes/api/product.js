@@ -211,6 +211,34 @@ router.delete('/delete/:id', auth, role.check(ROLES.Admin, ROLES.Merchant, ROLES
   }
 });
 
+// DELETE single image from Cloudinary by URL
+router.post('/image/delete', auth, role.check(ROLES.Admin, ROLES.Merchant, ROLES.Member), async (req, res) => {
+  try {
+    const { url } = req.body || {};
+    if (!url) return res.status(400).json({ error: 'Image url is required.' });
+
+    // Parse public_id from Cloudinary URL: remove version and extension
+    // e.g. https://res.cloudinary.com/<cloud>/image/upload/v12345/folder/name.jpg
+    const parts = url.split('/');
+    const uploadIndex = parts.findIndex(p => p === 'upload');
+    if (uploadIndex === -1) return res.status(400).json({ error: 'Invalid cloudinary url.' });
+    let publicParts = parts.slice(uploadIndex + 1).join('/');
+    // remove version prefix like v12345/
+    publicParts = publicParts.replace(/^v\d+\//, '');
+    // strip extension
+    const publicId = publicParts.replace(/\.[^/.]+$/, '');
+
+    const result = await cloudinary.uploader.destroy(publicId);
+    if (result.result === 'not found') {
+      return res.status(404).json({ error: 'Image not found on Cloudinary.' });
+    }
+    res.status(200).json({ success: true, message: 'Image deleted from Cloudinary.' });
+  } catch (error) {
+    console.error('Error deleting image:', error);
+    res.status(400).json({ error: 'Failed to delete image.' });
+  }
+});
+
 // GET single product by id (admin) - MUST be last to avoid shadowing other /:id routes
 router.get('/:id',async (req, res) => {
   try {

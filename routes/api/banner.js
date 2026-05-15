@@ -56,8 +56,34 @@ router.post('/add', auth,  async (req, res) => {
 });
 
 // DELETE banner
+// DELETE banner (also remove images from Cloudinary when present)
 router.delete('/delete/:id', auth,  async (req, res) => {
   try {
+    const b = await Banner.findById(req.params.id);
+    if (!b) return res.status(404).json({ error: 'Banner not found.' });
+
+    // attempt to delete images from Cloudinary if URLs exist
+    const attempts = [];
+    const deleteFromCloudinary = async (url) => {
+      if (!url) return;
+      const parts = url.split('/');
+      const uploadIndex = parts.findIndex(p => p === 'upload');
+      if (uploadIndex === -1) return;
+      let publicParts = parts.slice(uploadIndex + 1).join('/');
+      publicParts = publicParts.replace(/^v\d+\//, '');
+      const publicId = publicParts.replace(/\.[^/.]+$/, '');
+      try {
+        await cloudinary.uploader.destroy(publicId);
+      } catch (e) {
+        console.warn('Failed to destroy banner image:', publicId, e.message || e);
+      }
+    };
+
+    attempts.push(deleteFromCloudinary(b.desktopImage));
+    attempts.push(deleteFromCloudinary(b.mobileImage));
+
+    await Promise.all(attempts);
+
     const banner = await Banner.deleteOne({ _id: req.params.id });
 
     res.status(200).json({
@@ -66,6 +92,7 @@ router.delete('/delete/:id', auth,  async (req, res) => {
       banner
     });
   } catch (error) {
+    console.error('Error deleting banner:', error);
     res.status(400).json({ error: 'Your request could not be processed. Please try again.' });
   }
 });
