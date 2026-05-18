@@ -174,9 +174,11 @@ router.put('/:id', auth, role.check(ROLES.Admin), async (req, res) => {
     }
 
     const { slug } = update;
-    const foundCategory = await Category.findOne({ slug });
-    if (foundCategory && foundCategory._id != categoryId) {
-      return res.status(400).json({ error: 'Slug is already in use.' });
+    if (slug) {
+      const foundCategory = await Category.findOne({ slug });
+      if (foundCategory && foundCategory._id != categoryId) {
+        return res.status(400).json({ error: 'Slug is already in use.' });
+      }
     }
 
     await Category.findByIdAndUpdate(categoryId, update, { new: true });
