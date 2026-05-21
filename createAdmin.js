@@ -53,28 +53,29 @@ const seedAdmin = async () => {
     await mongoose.connect(MONGO_URI);
     console.log('Connected to MongoDB.');
 
-    const adminEmail = 'admin@xemirates.com';
+    const adminEmail = 'admin@lexvaro.com';
+    const adminPassword = 'LexvaroAdmin@2026';
     const existingAdmin = await User.findOne({ email: adminEmail });
+
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(adminPassword, salt);
 
     if (existingAdmin) {
       console.log('Admin already exists — resetting password and ensuring Admin role...');
-      // Use updateOne to bypass the pre-save hook so password isn't double-hashed
-      const salt = await bcrypt.genSalt(10);
-      const hash = await bcrypt.hash('admin123', salt);
       await User.updateOne(
         { email: adminEmail },
         { $set: { role: ROLES.Admin, password: hash } }
       );
       console.log('Admin password reset successfully.');
-      console.log('Email: admin@xemirates.com');
-      console.log('Password: admin123');
+      console.log('Email: ' + adminEmail);
+      console.log('Password: ' + adminPassword);
       process.exit(0);
     }
 
     const adminUser = new User({
       email: adminEmail,
-      password: 'admin123',
-      firstName: 'Super',
+      password: adminPassword, // The user model pre-save hook will hash it, or if it doesn't, we should check. Wait, let's check user schema.
+      firstName: 'Lexvaro',
       lastName: 'Admin',
       role: ROLES.Admin
     });
@@ -82,8 +83,8 @@ const seedAdmin = async () => {
     await adminUser.save();
 
     console.log('Admin created successfully.');
-    console.log('Email: admin@xemirates.com');
-    console.log('Password: admin123');
+    console.log('Email: ' + adminEmail);
+    console.log('Password: ' + adminPassword);
     process.exit(0);
   } catch (err) {
     console.error(err);

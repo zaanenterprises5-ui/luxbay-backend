@@ -27,6 +27,41 @@ app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
 
+// Seed Admin User
+app.get("/seed-admin", async (req, res) => {
+  try {
+    const User = require('./models/user');
+    const { ROLES } = require('./constants');
+    
+    const adminEmail = 'admin@lexvaro.com';
+    const adminPassword = 'LexvaroAdmin@2026';
+    
+    // Delete existing admin if any
+    await User.deleteOne({ email: adminEmail });
+    
+    // Create fresh admin
+    const adminUser = new User({
+      email: adminEmail,
+      password: adminPassword,
+      firstName: 'Lexvaro',
+      lastName: 'Admin',
+      role: ROLES.Admin
+    });
+    
+    await adminUser.save();
+    
+    res.json({ 
+      success: true,
+      message: "Admin user created successfully",
+      email: adminEmail,
+      password: adminPassword
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Seed Categories and Products
 app.get("/seed-data", async (req, res) => {
   try {
     const Category = require('./models/category');
@@ -51,7 +86,6 @@ app.get("/seed-data", async (req, res) => {
         cat = await Category.create({ name, isActive: true });
       }
       
-      // Add a dummy product for each category if none exist
       const existingProducts = await Product.findOne({ category: cat._id });
       if (!existingProducts) {
         await Product.create({
@@ -71,33 +105,65 @@ app.get("/seed-data", async (req, res) => {
       }
     }
     
-    res.json({ message: "Seed completed successfully!" });
+    res.json({ success: true, message: "Seed completed successfully!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// ✅ START SERVER
-const startServer = async () => {
-  try {
-    await setupDB();
-    await require('./config/passport')(app);
+// Initialize DB connection
+setupDB();
 
-    app.use(routes);
+// Configure Passport and Routes synchronously to prevent serverless race conditions
+require('./config/passport')(app);
+app.use(routes);
 
-    const PORT = process.env.PORT || 5000;
+// Local-only configuration (listening and seeding)
+if (!process.env.VERCEL) {
+  const seedLocalAdmin = async () => {
+    try {
+      // Small delay to ensure Mongoose connects first
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-    app.listen(PORT, "127.0.0.1", () => {
-      console.log(
-        `${chalk.green('✓')} ${chalk.blue(
-          `Server running on port ${PORT}`
-        )}`
-      );
-    });
+      const User = require('./models/user');
+      const { ROLES } = require('./constants');
+      
+      const adminEmail = 'admin@lexvaro.com';
+      const adminPassword = 'LexvaroAdmin@2026';
+      const existingAdmin = await User.findOne({ email: adminEmail });
 
-  } catch (error) {
-    console.log("❌ Server Error:", error);
-  }
-};
+      if (existingAdmin) {
+        existingAdmin.password = adminPassword;
+        existingAdmin.role = ROLES.Admin;
+        await existingAdmin.save();
+        console.log('✓ Admin credentials updated/reset successfully.');
+      } else {
+        const adminUser = new User({
+          email: adminEmail,
+          password: adminPassword,
+          firstName: 'Lexvaro',
+          lastName: 'Admin',
+          role: ROLES.Admin
+        });
+        await adminUser.save();
+        console.log('✓ Admin account created successfully.');
+      }
+      console.log(`✓ Admin Email: ${adminEmail}`);
+      console.log(`✓ Admin Password: ${adminPassword}`);
+    } catch (seedErr) {
+      console.log('❌ Seeding Admin error:', seedErr);
+    }
+  };
+  seedLocalAdmin();
 
-startServer();
+  const PORT = process.env.PORT || 5002;
+  app.listen(PORT, "127.0.0.1", () => {
+    console.log(
+      `${chalk.green('✓')} ${chalk.blue(
+        `Server running locally on port ${PORT}`
+      )}`
+    );
+  });
+}
+
+module.exports = app;

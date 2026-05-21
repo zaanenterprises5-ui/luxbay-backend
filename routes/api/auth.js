@@ -37,11 +37,11 @@ router.post('/login', async (req, res) => {
     if (!user) {
       return res
         .status(400)
-        .send({ error: 'No user found for this email address.' });
+        .json({ error: 'No user found for this email address.' });
     }
 
     if (user && user.provider !== EMAIL_PROVIDER.Email) {
-      return res.status(400).send({
+      return res.status(400).json({
         error: `That email address is already in use using ${user.provider} provider.`
       });
     }
@@ -77,6 +77,7 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(400).json({
       error: 'Your request could not be processed. Please try again.'
     });
