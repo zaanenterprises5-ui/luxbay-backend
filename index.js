@@ -31,14 +31,23 @@ const corsOptions = {
       'https://lux-varo-admin.vercel.app',
       'https://lux-varo-user.vercel.app',
       'https://lexvaro-admin.vercel.app',
-      'https://lexvaro-user.vercel.app'
+      'https://lexvaro-user.vercel.app',
+      // Production domains
+      'https://admin.lexvaro.in',
+      'https://shop.lexvaro.in',
+      'https://api.lexvaro.in',
+      'https://www.lexvaro.in',
+      'https://lexvaro.in'
     ];
-    
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin || allowedOrigins.includes(origin)) {
+
+    // Allow requests with no origin (mobile apps, Postman, server-to-server)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(null, true); // Allow all for now to debug
+      // Deny other origins
+      callback(null, false);
     }
   },
   credentials: true,
@@ -49,6 +58,37 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // Handle preflight requests
+
+// Additional safety middleware to ensure CORS headers for allowed origins
+app.use((req, res, next) => {
+  const origin = req.get('origin');
+  const allowed = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'https://lux-varo-admin.vercel.app',
+    'https://lux-varo-user.vercel.app',
+    'https://lexvaro-admin.vercel.app',
+    'https://lexvaro-user.vercel.app',
+    'https://admin.lexvaro.in',
+    'https://shop.lexvaro.in',
+    'https://api.lexvaro.in',
+    'https://www.lexvaro.in',
+    'https://lexvaro.in'
+  ];
+
+  if (origin && allowed.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+  }
+
+  // Handle OPTIONS quickly
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
 
 // ✅ ROOT ROUTE (IMPORTANT FIX)
 app.get("/", (req, res) => {
@@ -185,11 +225,10 @@ if (!process.env.VERCEL) {
   seedLocalAdmin();
 
   const PORT = process.env.PORT || 5002;
-  const HOST = process.env.HOST || '0.0.0.0';
-  app.listen(PORT, HOST, () => {
+  app.listen(PORT, "127.0.0.1", () => {
     console.log(
       `${chalk.green('✓')} ${chalk.blue(
-        `Server running on port ${PORT} (host: ${HOST})`
+        `Server running locally on port ${PORT}`
       )}`
     );
   });
