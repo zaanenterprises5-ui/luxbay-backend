@@ -20,7 +20,35 @@ app.use(
   })
 );
 
-app.use(cors());
+// ✅ Enhanced CORS Configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5173',
+      'http://127.0.0.1:3000',
+      'https://lux-varo-admin.vercel.app',
+      'https://lux-varo-user.vercel.app',
+      'https://lexvaro-admin.vercel.app',
+      'https://lexvaro-user.vercel.app'
+    ];
+    
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all for now to debug
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handle preflight requests
 
 // ✅ ROOT ROUTE (IMPORTANT FIX)
 app.get("/", (req, res) => {
