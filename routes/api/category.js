@@ -10,39 +10,6 @@ const store = require('../../utils/store');
 const cloudinary = require('../../config/cloudinary');
 const { ROLES } = require('../../constants');
 
-// router.post('/add', auth, role.check(ROLES.Admin), (req, res) => {
-//   const name = req.body.name;
-//   const description = req.body.description;
-//   const products = req.body.products;
-//   const isActive = req.body.isActive;
-
-//   if (!description || !name) {
-//     return res
-//       .status(400)
-//       .json({ error: 'You must enter description & name.' });
-//   }
-
-//   const category = new Category({
-//     name,
-//     description,
-//     products,
-//     isActive
-//   });
-
-//   category.save((err, data) => {
-//     if (err) {
-//       return res.status(400).json({
-//         error: 'Your request could not be processed. Please try again.'
-//       });
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       message: `Category has been added successfully!`,
-//       category: data
-//     });
-//   });
-// });
 router.post('/add', auth, role.check(ROLES.Admin), async (req, res) => {
   try {
     const { name, description, products, isActive, subCategories, image } = req.body;
@@ -51,14 +18,26 @@ router.post('/add', auth, role.check(ROLES.Admin), async (req, res) => {
       return res.status(400).json({ error: 'You must enter description & name.' });
     }
 
-    // Normalize and upload image when base64 provided
+    // Upload image to Cloudinary when base64 provided
     let imageUrl = null;
     if (image && typeof image === 'string' && image.startsWith('data:image')) {
-      const upload = await cloudinary.uploader.upload(image, { folder: 'categories' });
-      imageUrl = upload.secure_url;
+      try {
+        const upload = await cloudinary.uploader.upload(image, {
+          folder: 'categories',
+          resource_type: 'image',
+          transformation: [{ quality: 'auto', fetch_format: 'auto' }]
+        });
+        imageUrl = upload.secure_url;
+      } catch (uploadErr) {
+        console.error('Cloudinary upload error:', uploadErr.message || uploadErr);
+        return res.status(400).json({ error: 'Image upload failed. Please try a smaller image or different format.' });
+      }
+    } else if (image && typeof image === 'string' && image.startsWith('http')) {
+      // Already a URL (e.g. re-save)
+      imageUrl = image;
     }
 
-    // Create a safe unique slug derived from name (avoid duplicate key errors)
+    // Create a safe unique slug derived from name
     const slugify = (s = '') =>
       s
         .toString()
@@ -72,7 +51,6 @@ router.post('/add', auth, role.check(ROLES.Admin), async (req, res) => {
     const baseSlug = slugify(name || 'category');
     let candidateSlug = baseSlug || `cat-${Date.now().toString().slice(-4)}`;
     let i = 1;
-    // ensure uniqueness
     while (await Category.exists({ slug: candidateSlug })) {
       candidateSlug = `${baseSlug}-${i}`;
       i += 1;
@@ -97,11 +75,11 @@ router.post('/add', auth, role.check(ROLES.Admin), async (req, res) => {
     });
 
   } catch (err) {
-    // Duplicate key (slug) -> return friendly message
     if (err && err.code === 11000) {
       return res.status(400).json({ error: 'A category with a similar name/slug already exists. Please choose a different name.' });
     }
     console.error('Category add error:', err && err.message ? err.message : err);
+    console.error('Category add stack:', err && err.stack ? err.stack : 'no stack');
     res.status(400).json({ error: 'Your request could not be processed. Please try again.' });
   }
 });
@@ -160,44 +138,24 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// router.put('/:id', auth, role.check(ROLES.Admin), async (req, res) => {
-//   try {
-//     const categoryId = req.params.id;
-//     const update = req.body.category;
-//     const query = { _id: categoryId };
-//     const { slug } = req.body.category;
-
-//     const foundCategory = await Category.findOne({
-//       $or: [{ slug }]
-//     });
-
-//     if (foundCategory && foundCategory._id != categoryId) {
-//       return res.status(400).json({ error: 'Slug is already in use.' });
-//     }
-
-//     await Category.findOneAndUpdate(query, update, {
-//       new: true
-//     });
-
-//     res.status(200).json({
-//       success: true,
-//       message: 'Category has been updated successfully!'
-//     });
-//   } catch (error) {
-//     res.status(400).json({
-//       error: 'Your request could not be processed. Please try again.'
-//     });
-//   }
-// });
 router.put('/:id', auth, role.check(ROLES.Admin), async (req, res) => {
   try {
     const categoryId = req.params.id;
     const update = req.body.category;
 
     // Upload new image if base64 provided
-    if (update.image && update.image.startsWith('data:image')) {
-      const upload = await cloudinary.uploader.upload(update.image, { folder: 'categories' });
-      update.image = upload.secure_url;
+    if (update.image && typeof update.image === 'string' && update.image.startsWith('data:image')) {
+      try {
+        const upload = await cloudinary.uploader.upload(update.image, {
+          folder: 'categories',
+          resource_type: 'image',
+          transformation: [{ quality: 'auto', fetch_format: 'auto' }]
+        });
+        update.image = upload.secure_url;
+      } catch (uploadErr) {
+        console.error('Cloudinary upload error (update):', uploadErr.message || uploadErr);
+        return res.status(400).json({ error: 'Image upload failed. Please try a smaller image or different format.' });
+      }
     }
 
     const { slug } = update;
@@ -216,6 +174,7 @@ router.put('/:id', auth, role.check(ROLES.Admin), async (req, res) => {
     });
 
   } catch (error) {
+    console.error('Category update error:', error.message || error);
     res.status(400).json({ error: 'Your request could not be processed.' });
   }
 });
