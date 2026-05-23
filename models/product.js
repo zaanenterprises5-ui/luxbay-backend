@@ -2,7 +2,11 @@ const Mongoose = require('mongoose');
 const slug = require('mongoose-slug-generator');
 const { Schema } = Mongoose;
 
-Mongoose.plugin(slug, { separator: '-', lang: 'en', truncate: 120 });
+// Prevent duplicate plugin registration on Vercel serverless
+if (!Mongoose.__slugPluginRegistered) {
+  Mongoose.plugin(slug, { separator: '-', lang: 'en', truncate: 120 });
+  Mongoose.__slugPluginRegistered = true;
+}
 
 const VariantSchema = new Schema({
   color: { type: String, trim: true, required: true },
