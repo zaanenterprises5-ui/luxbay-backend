@@ -29,16 +29,8 @@ const corsOptions = {
       'http://localhost:3001',
       'http://localhost:5173',
       'http://127.0.0.1:3000',
-      'https://lux-varo-admin.vercel.app',
-      'https://lux-varo-user.vercel.app',
-      'https://lexvaro-admin.vercel.app',
-      'https://lexvaro-user.vercel.app',
-      // Production domains
-      'https://admin.lexvaro.in',
-      'https://shop.lexvaro.in',
-      'https://api.lexvaro.in',
-      'https://www.lexvaro.in',
-      'https://lexvaro.in'
+      'https://luxbay-admin.vercel.app',
+      'https://luxbay-frontend.vercel.app'
     ];
 
     // Allow requests with no origin (mobile apps, Postman, server-to-server)
@@ -102,8 +94,8 @@ app.get("/seed-admin", async (req, res) => {
     const User = require('./models/user');
     const { ROLES } = require('./constants');
 
-    const adminEmail = 'admin@lexvaro.com';
-    const adminPassword = 'LexvaroAdmin@2026';
+    const adminEmail = 'admin@luxbay.com';
+    const adminPassword = 'LuxbayAdmin@2026';
 
     // Delete existing admin if any
     await User.deleteOne({ email: adminEmail });
@@ -112,7 +104,7 @@ app.get("/seed-admin", async (req, res) => {
     const adminUser = new User({
       email: adminEmail,
       password: adminPassword,
-      firstName: 'Lexvaro',
+      firstName: 'Luxbay',
       lastName: 'Admin',
       role: ROLES.Admin
     });
@@ -194,21 +186,21 @@ const startServer = async () => {
           const User = require('./models/user');
           const { ROLES } = require('./constants');
 
-          const adminEmail = 'admin@luxbae.in';
-          const adminPassword = 'LuxbaeAdmin@2026';
+          const adminEmail = 'admin@luxbay.com';
+          const adminPassword = 'LuxbayAdmin@2026';
           const existingAdmin = await User.findOne({ email: adminEmail });
 
           if (existingAdmin) {
             existingAdmin.password = adminPassword;
             existingAdmin.role = ROLES.Admin;
-            existingAdmin.firstName = 'Luxbae';
+            existingAdmin.firstName = 'Luxbay';
             await existingAdmin.save();
             console.log('✓ Admin credentials updated/reset successfully.');
           } else {
             const adminUser = new User({
               email: adminEmail,
               password: adminPassword,
-              firstName: 'Luxvaro',
+              firstName: 'Luxbay',
               lastName: 'Admin',
               role: ROLES.Admin
             });
