@@ -60,15 +60,8 @@ app.use((req, res, next) => {
     'http://localhost:3001',
     'http://localhost:5173',
     'http://127.0.0.1:3000',
-    'https://lux-varo-admin.vercel.app',
-    'https://lux-varo-user.vercel.app',
-    'https://lexvaro-admin.vercel.app',
-    'https://lexvaro-user.vercel.app',
-    'https://admin.lexvaro.in',
-    'https://shop.lexvaro.in',
-    'https://api.lexvaro.in',
-    'https://www.lexvaro.in',
-    'https://lexvaro.in'
+    'https://luxbay-admin.vercel.app',
+    'https://luxbay-frontend.vercel.app'
   ];
 
   if (origin && allowed.includes(origin)) {
