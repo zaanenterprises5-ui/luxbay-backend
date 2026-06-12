@@ -8,6 +8,7 @@ const routes = require('./routes');
 const setupDB = require('./utils/db');
 
 const app = express();
+const HOST = process.env.HOST || '0.0.0.0';
 
 // ✅ Middlewares
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -223,8 +224,8 @@ const startServer = async () => {
       seedLocalAdmin();
 
       const PORT = process.env.PORT || 5000;
-      app.listen(PORT, '0.0.0.0', () => {
-        console.log(`Server running on port ${PORT}`);
+      app.listen(PORT, HOST, () => {
+        console.log(`Server running on ${HOST}:${PORT}`);
       });
     }
   } catch (startupError) {
