@@ -100,13 +100,13 @@ app.get("/seed-admin", async (req, res) => {
   try {
     const User = require('./models/user');
     const { ROLES } = require('./constants');
-    
+
     const adminEmail = 'admin@lexvaro.com';
     const adminPassword = 'LexvaroAdmin@2026';
-    
+
     // Delete existing admin if any
     await User.deleteOne({ email: adminEmail });
-    
+
     // Create fresh admin
     const adminUser = new User({
       email: adminEmail,
@@ -115,10 +115,10 @@ app.get("/seed-admin", async (req, res) => {
       lastName: 'Admin',
       role: ROLES.Admin
     });
-    
+
     await adminUser.save();
-    
-    res.json({ 
+
+    res.json({
       success: true,
       message: "Admin user created successfully",
       email: adminEmail,
@@ -134,7 +134,7 @@ app.get("/seed-data", async (req, res) => {
   try {
     const Category = require('./models/category');
     const Product = require('./models/product');
-    
+
     const categories = [
       "T shirts",
       "Shirts",
@@ -153,7 +153,7 @@ app.get("/seed-data", async (req, res) => {
       if (!cat) {
         cat = await Category.create({ name, isActive: true });
       }
-      
+
       const existingProducts = await Product.findOne({ category: cat._id });
       if (!existingProducts) {
         await Product.create({
@@ -172,66 +172,68 @@ app.get("/seed-data", async (req, res) => {
         });
       }
     }
-    
+
     res.json({ success: true, message: "Seed completed successfully!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Initialize DB connection
-setupDB();
+const startServer = async () => {
+  try {
+    await setupDB();
 
-// Configure Passport and Routes synchronously to prevent serverless race conditions
-require('./config/passport')(app);
-app.use(routes);
+    // Configure Passport and Routes synchronously to prevent serverless race conditions
+    require('./config/passport')(app);
+    app.use(routes);
 
-// Local-only configuration (listening and seeding)
-if (!process.env.VERCEL) {
-  const seedLocalAdmin = async () => {
-    try {
-      // Small delay to ensure Mongoose connects first
-      await new Promise(resolve => setTimeout(resolve, 2000));
+    if (!process.env.VERCEL) {
+      const seedLocalAdmin = async () => {
+        try {
+          const User = require('./models/user');
+          const { ROLES } = require('./constants');
 
-      const User = require('./models/user');
-      const { ROLES } = require('./constants');
-      
-      const adminEmail = 'admin@lexvaro.com';
-      const adminPassword = 'LexvaroAdmin@2026';
-      const existingAdmin = await User.findOne({ email: adminEmail });
+          const adminEmail = 'admin@luxbae.in';
+          const adminPassword = 'LuxbaeAdmin@2026';
+          const existingAdmin = await User.findOne({ email: adminEmail });
 
-      if (existingAdmin) {
-        existingAdmin.password = adminPassword;
-        existingAdmin.role = ROLES.Admin;
-        await existingAdmin.save();
-        console.log('✓ Admin credentials updated/reset successfully.');
-      } else {
-        const adminUser = new User({
-          email: adminEmail,
-          password: adminPassword,
-          firstName: 'Lexvaro',
-          lastName: 'Admin',
-          role: ROLES.Admin
-        });
-        await adminUser.save();
-        console.log('✓ Admin account created successfully.');
-      }
-      console.log(`✓ Admin Email: ${adminEmail}`);
-      console.log(`✓ Admin Password: ${adminPassword}`);
-    } catch (seedErr) {
-      console.log('❌ Seeding Admin error:', seedErr);
+          if (existingAdmin) {
+            existingAdmin.password = adminPassword;
+            existingAdmin.role = ROLES.Admin;
+            existingAdmin.firstName = 'Luxbae';
+            await existingAdmin.save();
+            console.log('✓ Admin credentials updated/reset successfully.');
+          } else {
+            const adminUser = new User({
+              email: adminEmail,
+              password: adminPassword,
+              firstName: 'Luxvaro',
+              lastName: 'Admin',
+              role: ROLES.Admin
+            });
+            await adminUser.save();
+            console.log('✓ Admin account created successfully.');
+          }
+          console.log(`✓ Admin Email: ${adminEmail}`);
+          console.log(`✓ Admin Password: ${adminPassword}`);
+        } catch (seedErr) {
+          console.log('❌ Seeding Admin error:', seedErr);
+        }
+      };
+      seedLocalAdmin();
+
+      const PORT = process.env.PORT || 5000;
+      app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server running on port ${PORT}`);
+      });
     }
-  };
-  seedLocalAdmin();
+  } catch (startupError) {
+    console.error(`${chalk.red('✗')} Failed to start server.`);
+    console.error(startupError);
+    process.exit(1);
+  }
+};
 
-  const PORT = process.env.PORT || 5002;
-  app.listen(PORT, "127.0.0.1", () => {
-    console.log(
-      `${chalk.green('✓')} ${chalk.blue(
-        `Server running locally on port ${PORT}`
-      )}`
-    );
-  });
-}
+startServer();
 
 module.exports = app;

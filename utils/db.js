@@ -10,11 +10,14 @@ const setupDB = async () => {
     await mongoose.connect(database.url, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000,
     });
     console.log(`${chalk.green('✓')} ${chalk.blue('MongoDB Connected!')}`);
+    return true;
   } catch (error) {
-    console.log(error);
-    return null;
+    console.error(`${chalk.red('✗')} MongoDB connection failed:`);
+    console.error(error);
+    throw error;
   }
 };
 
