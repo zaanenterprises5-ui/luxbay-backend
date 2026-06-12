@@ -13,9 +13,10 @@ RUN npm install
 # Copy the rest of the server code
 COPY . .
 
-# Set the default PORT used by the app and expose it
+# Set the default runtime environment and expose the default port
 ENV PORT=5002
+ENV HOST=0.0.0.0
 EXPOSE 5002
 
 # Default command to start the application
-CMD ["npm", "start"]
+CMD ["node", "index.js"]

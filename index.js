@@ -223,10 +223,16 @@ const startServer = async () => {
       };
       seedLocalAdmin();
 
-      const PORT = process.env.PORT || 5000;
-      app.listen(PORT, HOST, () => {
-        console.log(`Server running on ${HOST}:${PORT}`);
-      });
+      const PORT = parseInt(process.env.PORT, 10) || 5000;
+      const isVercel = String(process.env.VERCEL || '').toLowerCase() === 'true';
+
+      if (isVercel) {
+        console.log('Vercel deployment detected; skipping local app.listen() to avoid duplicate server startup.');
+      } else {
+        app.listen(PORT, HOST, () => {
+          console.log(`Server running on ${HOST}:${PORT}`);
+        });
+      }
     }
   } catch (startupError) {
     console.error(`${chalk.red('✗')} Failed to start server.`);
