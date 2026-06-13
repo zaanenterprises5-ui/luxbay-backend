@@ -81,6 +81,7 @@ app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
 
+
 // Seed Admin User
 app.get("/seed-admin", async (req, res) => {
   try {
